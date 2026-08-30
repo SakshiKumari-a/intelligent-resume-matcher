@@ -339,6 +339,9 @@ Although Gemini provides strong language understanding, relying entirely on an L
 
 By combining Gemini extraction with a deterministic scoring engine, the system remains explainable, transparent, and reproducible.
 
+## Demo
+![App Screenshot](screenshot.png)
+
 ## Author
 
 Sakshi kumari
