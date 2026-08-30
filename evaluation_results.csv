@@ -1,0 +1,11 @@
+CaseID,Scenario,ExpectedRecommendation,ExpectedMinScore,ExpectedMaxScore,CalculatedScore,ActualRecommendation,ScoreRangePass,RecommendationPass,FinalResult,Error
+CASE_01,1. Excellent Candidate,Excellent Match,90.0,100.0,91.41,Excellent Match,True,True,PASS,
+CASE_02,2. Strong Candidate,Strong Match,75.0,89.9,87.19,Strong Match,True,True,PASS,
+CASE_03,3. Moderate Candidate,Moderate Match,70.38,75.0,70.42,Moderate Match,True,True,PASS,
+CASE_04,4. Weak Candidate,poor Match,26.95,39.0,26.95,Poor Match,True,False,FAIL,
+CASE_05,5. Completely Unrelated Candidate,Poor Match,0.0,39.9,35.29,Poor Match,True,True,PASS,
+CASE_06,6. Candidate with Synonyms,Excellent Match,85.0,100.0,90.91,Excellent Match,True,True,PASS,
+CASE_07,7. Candidate with Abbreviations,Excellent Match,90.0,100.0,92.7,Excellent Match,True,True,PASS,
+CASE_08,8. Keyword-Heavy Resume,Moderate Match,65.92,69.9,65.99,Moderate Match,True,True,PASS,
+CASE_09,9. Experienced Candidate with Missing Skills,Poor Match,25.21,39.9,25.23,Poor Match,True,True,PASS,
+CASE_10,10. Fresh Graduate with Strong Projects,Moderate Match,65.67,69.9,65.73,Moderate Match,True,True,PASS,

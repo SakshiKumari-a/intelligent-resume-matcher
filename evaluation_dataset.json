@@ -1,0 +1,123 @@
+[
+  {
+    "id": "CASE_01",
+    "scenario": "1. Excellent Candidate",
+    "description": "Candidate matches all required technical skills, preferred skills, experience, and education.",
+    "resume_text": "John Doe. Senior Software Engineer with 5 years experience. Skilled in Python, SQL, REST API, Git, Docker, and AWS. Holds a Bachelor of Science in Computer Science.",
+    "job_text": "Senior Developer needed. Required: Python, SQL, REST API, Git. Preferred: Docker, AWS. Experience: 4 years. Education: Bachelor's degree.",
+    "expected_result": {
+      "recommendation": "Excellent Match",
+      "min_score": 90.0,
+      "max_score": 100.0
+    }
+  },
+  {
+    "id": "CASE_02",
+    "scenario": "2. Strong Candidate",
+    "description": "Matches all required skills and education, but missing preferred skills.",
+    "resume_text": "Jane Smith. Software Developer with 3 years experience in Python, SQL, REST API, and Git. Bachelor's in Information Technology.",
+    "job_text": "Backend Engineer. Required: Python, SQL, REST API, Git. Preferred: Docker, Kubernetes, AWS. Required experience: 3 years. Education: Bachelor's degree.",
+    "expected_result": {
+      "recommendation": "Strong Match",
+      "min_score": 75.0,
+      "max_score": 89.9
+    }
+  },
+  {
+    "id": "CASE_03",
+  "scenario": "3. Moderate Candidate",
+  "description": "Candidate has relevant work experience but lacks nearly all required technical skills and preferred qualifications for the role.",
+  "resume_text": "Alex Taylor. Data Analyst with 1 years experience using Excel, Power BI, Tableau, and Data Visualization. Bachelor's degree in Information Technology.",
+  "job_text": "Software Engineer. Required: Python, SQL, React, Node.js. Preferred: Docker, AWS. Experience: 3 years. Education: Bachelor's degree.",
+  "expected_result": {
+    "recommendation": "Moderate Match",
+    "min_score": 70.38,
+    "max_score": 75.0
+    }
+  },
+  {
+   "id": "CASE_04",
+  "scenario": "4. Weak Candidate",
+  "description": "Missing almost all required technical skills and under-experienced.",
+  "resume_text": "Chris Lee. Junior Developer with 2 years experience in Docker. Bachelor's degree.",
+  "job_text": "DevOps Engineer. Required: Docker, Kubernetes, AWS. Experience: 5 years. Education: Bachelor's degree.",
+  "expected_result": {
+    "recommendation": "poor Match",
+    "min_score": 26.95,
+    "max_score": 39.0
+    }
+  },
+  {
+     "id": "CASE_05",
+  "scenario": "5. Completely Unrelated Candidate",
+  "description": "Candidate from a non-technical domain with zero skill overlap.",
+  "resume_text": "Sam Brown. Executive Head Chef with 10 years experience in culinary arts and food safety.",
+  "job_text": "Required: Python, SQL, Machine Learning, PyTorch. Experience: 2 years.",
+  "expected_result": {
+    "recommendation": "Poor Match",
+    "min_score": 0.0,
+    "max_score": 39.9
+
+    }
+  },
+  {
+    "id": "CASE_06",
+  "scenario": "6. Candidate with Synonyms",
+  "description": "Uses full formal terms (e.g., PostgreSQL, Amazon Web Services) matching job shortened terms.",
+  "resume_text": "Morgan Reed. Developer with PostgreSQL, SQL and Amazon Web Services. 3 years experience. Bachelor's degree.",
+  "job_text": "Required: Postgres, SQL, AWS. Experience: 3 years. Education: Bachelor's degree.",
+  "expected_result": {
+    "recommendation": "Excellent Match",
+    "min_score": 85.0,
+    "max_score": 100.0
+    }
+  },
+  {
+    "id": "CASE_07",
+  "scenario": "7. Candidate with Abbreviations",
+  "description": "Uses acronyms (JS, ML, NLP, K8s) matching spelled-out job descriptions.",
+  "resume_text": "Taylor Jordan. AI Engineer with 4 years experience in JavaScript, Machine Learning, Natural Language Processing and Kubernetes. Master's degree.",
+  "job_text": "AI Engineer. Required: JavaScript, Machine Learning, Natural Language Processing, Kubernetes. Experience: 3 years.",
+  "expected_result": {
+    "recommendation": "Excellent Match",
+    "min_score": 90.0,
+    "max_score": 100.0
+    }
+  },
+  {
+    "id": "CASE_08",
+    "scenario": "8. Keyword-Heavy Resume",
+    "description": "Candidate repeats keywords endlessly without context or actual experience.",
+    "resume_text": "Python Python Python Python SQL SQL Docker AWS React React. Looking for entry level position.",
+    "job_text": "Senior Backend Developer. Required: Python, SQL, Docker, AWS. Experience: 6 years. Education: Bachelor's degree.",
+    "expected_result": {
+      "recommendation": "Moderate Match",
+      "min_score": 65.92,
+      "max_score": 69.9
+    }
+  },
+  {
+    "id": "CASE_09",
+    "scenario": "9. Experienced Candidate with Missing Skills",
+    "description": "High experience and strong education, but lacks specific niche tools requested.",
+    "resume_text": "Dr. Evelyn Vance. 10 years experience in Software Architecture and C++. PhD in Computer Science.",
+    "job_text": "Lead Data Engineer. Required: Python, PyTorch, Snowflake, dbt. Experience: 5 years. Education: Master's degree.",
+    "expected_result": {
+      "recommendation": "Poor Match",
+      "min_score": 25.21,
+      "max_score":39.9
+    }
+  },
+  {
+    "id": "CASE_10",
+    "scenario": "10. Fresh Graduate with Strong Projects",
+    "description": "Zero formal work experience years, but strong project portfolio and degree.",
+    "resume_text": "Jordan Miller. Fresh Graduate, B.S. in Computer Science. Projects: Built Full-Stack E-commerce app using Python, SQL, React, and Git.",
+    "job_text": "Junior Software Engineer. Required: Python, SQL, React, Git. Experience: 1 year. Education: Bachelor's degree.",
+    "expected_result": {
+      "recommendation": "Moderate Match",
+      "min_score": 65.67,
+      "max_score": 69.9
+    }
+  }
+]
