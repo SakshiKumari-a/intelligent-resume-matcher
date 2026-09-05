@@ -1,10 +1,5 @@
 import re
 
-
-# ---------------------------------------------------------
-# SKILL ALIASES
-# ---------------------------------------------------------
-
 SKILL_ALIASES = {
     # Python
     "py": "python",
@@ -30,11 +25,11 @@ SKILL_ALIASES = {
 
     # PostgreSQL
     "postgres": "postgresql",
-    "psql": "postgresql",
     "postgre": "postgresql",
+    "psql": "postgresql",
     "postgres db": "postgresql",
 
-    # REST
+    # REST APIs
     "restful api": "rest api",
     "restful apis": "rest api",
     "rest apis": "rest api",
@@ -52,13 +47,9 @@ SKILL_ALIASES = {
     "gcp": "google cloud platform",
     "google cloud": "google cloud platform",
 
-    # Machine Learning
+    # AI/ML
     "ml": "machine learning",
-
-    # Natural Language Processing
     "nlp": "natural language processing",
-
-    # Artificial Intelligence
     "ai": "artificial intelligence",
 
     # Databases
@@ -66,10 +57,10 @@ SKILL_ALIASES = {
     "mysql database": "mysql",
 
     # CI/CD
-    "ci cd": "ci/cd",
     "cicd": "ci/cd",
+    "ci cd": "ci/cd",
 
-    # Version control
+    # Version Control
     "git scm": "git",
 
     # C++
@@ -77,14 +68,9 @@ SKILL_ALIASES = {
     "c plus plus": "c++",
 
     # C#
-    "c sharp": "c#",
     "csharp": "c#",
+    "c sharp": "c#",
 }
-
-
-# ---------------------------------------------------------
-# RELATED SKILLS
-# ---------------------------------------------------------
 
 RELATED_SKILLS = {
     "python": {
@@ -136,11 +122,13 @@ RELATED_SKILLS = {
     "machine learning": {
         "machine learning",
         "ml",
+        "predictive modeling",
     },
 
     "natural language processing": {
         "natural language processing",
         "nlp",
+        "text mining",
     },
 
     "kubernetes": {
@@ -154,6 +142,31 @@ RELATED_SKILLS = {
         "rest apis",
         "restful",
     },
+
+    "docker": {
+        "docker",
+        "docker containers",
+    },
+
+    "tensorflow": {
+        "tensorflow",
+        "tf",
+    },
+
+    "pytorch": {
+        "pytorch",
+        "torch",
+    },
+
+    "sql": {
+        "sql",
+        "sql server",
+    },
+
+    "git": {
+        "git",
+        "git scm",
+    },
 }
 
 
@@ -165,31 +178,47 @@ def normalize_skill(skill: str) -> str:
     if not skill:
         return ""
 
-    cleaned = str(skill).strip().lower()
+    skill = str(skill).strip().lower()
 
-    cleaned = cleaned.replace("&", " and ")
+    skill = skill.replace("&", " and ")
 
-    # Preserve # and + for C# / C++
-    cleaned = re.sub(r"[^a-z0-9+#./\s-]", " ", cleaned)
+    # Keep + and # for C++ / C#
+    skill = re.sub(
+        r"[^a-z0-9+#./\s-]",
+        " ",
+        skill
+    )
 
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    skill = re.sub(
+        r"\s+",
+        " ",
+        skill
+    ).strip()
 
-    # Remove common trailing punctuation
-    cleaned = cleaned.rstrip(".,;:")
+    skill = skill.rstrip(".,;:")
 
-    if cleaned in SKILL_ALIASES:
-        return SKILL_ALIASES[cleaned]
+    if skill in SKILL_ALIASES:
+        return SKILL_ALIASES[skill]
 
-    return cleaned
+    return skill
 
 
-def skill_matches(candidate_skill: str, target_skill: str) -> bool:
+def skill_matches(
+    candidate_skill: str,
+    target_skill: str,
+) -> bool:
     """
-    Determine whether two skill strings represent the same skill.
+    Determine whether two skills
+    represent the same technology.
     """
 
-    candidate = normalize_skill(candidate_skill)
-    target = normalize_skill(target_skill)
+    candidate = normalize_skill(
+        candidate_skill
+    )
+
+    target = normalize_skill(
+        target_skill
+    )
 
     if not candidate or not target:
         return False
@@ -197,19 +226,37 @@ def skill_matches(candidate_skill: str, target_skill: str) -> bool:
     if candidate == target:
         return True
 
-    candidate_aliases = RELATED_SKILLS.get(candidate, {candidate})
-    target_aliases = RELATED_SKILLS.get(target, {target})
+    candidate_aliases = RELATED_SKILLS.get(
+        candidate,
+        {candidate},
+    )
 
-    if candidate_aliases.intersection(target_aliases):
+    target_aliases = RELATED_SKILLS.get(
+        target,
+        {target},
+    )
+
+    if candidate_aliases.intersection(
+        target_aliases
+    ):
+        return True
+
+    if candidate in target:
+        return True
+
+    if target in candidate:
         return True
 
     return False
 
-
 def match_skills(
     candidate_skills: list[str],
-    target_skills: list[str]
+    target_skills: list[str],
 ) -> dict:
+    """
+    Compare candidate skills
+    against job skills.
+    """
 
     candidate_normalized = [
         normalize_skill(skill)
@@ -219,7 +266,8 @@ def match_skills(
 
     candidate_normalized = list(
         dict.fromkeys(
-            skill for skill in candidate_normalized
+            skill
+            for skill in candidate_normalized
             if skill
         )
     )
@@ -237,7 +285,10 @@ def match_skills(
     for target in target_skills:
 
         found = any(
-            skill_matches(candidate, target)
+            skill_matches(
+                candidate,
+                target,
+            )
             for candidate in candidate_normalized
         )
 
@@ -246,10 +297,15 @@ def match_skills(
         else:
             missing.append(target)
 
-    score = len(matched) / len(target_skills)
+    score = (
+        len(matched)
+        / len(target_skills)
+        if target_skills
+        else 1.0
+    )
 
     return {
         "matched": matched,
         "missing": missing,
-        "score": score,
+        "score": round(score, 4),
     }
