@@ -1,303 +1,311 @@
-import json
-import csv
-import os
-import sys
+import re
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+SKILL_ALIASES = {
+    # Python
+    "py": "python",
+    "python3": "python",
+    "python 3": "python",
 
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+    # JavaScript
+    "js": "javascript",
+    "javascript es6": "javascript",
+    "javascript es2015": "javascript",
 
-from app.resume_parser import extract_resume_information
-from app.job_parser import extract_job_requirements
-from app.scoring import compute_overall_match
+    # TypeScript
+    "ts": "typescript",
 
-DATASET_PATH = os.path.join(
-    PROJECT_ROOT,
-    "data",
-    "evaluation_dataset",
-    "evaluation_dataset.json"
-)
+    # React
+    "react.js": "react",
+    "reactjs": "react",
+    "react js": "react",
 
-RESULTS_CSV = os.path.join(
-    PROJECT_ROOT,
-    "data",
-    "evaluation_dataset",
-    "evaluation_results.csv"
-)
+    # Node
+    "node.js": "nodejs",
+    "node js": "nodejs",
+
+    # PostgreSQL
+    "postgres": "postgresql",
+    "postgre": "postgresql",
+    "psql": "postgresql",
+    "postgres db": "postgresql",
+
+    # REST APIs
+    "restful api": "rest api",
+    "restful apis": "rest api",
+    "rest apis": "rest api",
+    "restful": "rest api",
+
+    # Kubernetes
+    "k8s": "kubernetes",
+    "kube": "kubernetes",
+
+    # AWS
+    "aws": "amazon web services",
+    "amazon aws": "amazon web services",
+
+    # GCP
+    "gcp": "google cloud platform",
+    "google cloud": "google cloud platform",
+
+    # AI/ML
+    "ml": "machine learning",
+    "nlp": "natural language processing",
+    "ai": "artificial intelligence",
+
+    # Databases
+    "sql server": "sql",
+    "mysql database": "mysql",
+
+    # CI/CD
+    "cicd": "ci/cd",
+    "ci cd": "ci/cd",
+
+    # Version Control
+    "git scm": "git",
+
+    # C++
+    "cpp": "c++",
+    "c plus plus": "c++",
+
+    # C#
+    "csharp": "c#",
+    "c sharp": "c#",
+}
+
+RELATED_SKILLS = {
+    "python": {
+        "python",
+        "python programming",
+    },
+
+    "javascript": {
+        "javascript",
+        "js",
+        "ecmascript",
+    },
+
+    "typescript": {
+        "typescript",
+        "ts",
+    },
+
+    "react": {
+        "react",
+        "reactjs",
+        "react.js",
+    },
+
+    "nodejs": {
+        "nodejs",
+        "node.js",
+        "node js",
+    },
+
+    "postgresql": {
+        "postgresql",
+        "postgres",
+        "psql",
+    },
+
+    "amazon web services": {
+        "amazon web services",
+        "aws",
+        "amazon aws",
+    },
+
+    "google cloud platform": {
+        "google cloud platform",
+        "google cloud",
+        "gcp",
+    },
+
+    "machine learning": {
+        "machine learning",
+        "ml",
+        "predictive modeling",
+    },
+
+    "natural language processing": {
+        "natural language processing",
+        "nlp",
+        "text mining",
+    },
+
+    "kubernetes": {
+        "kubernetes",
+        "k8s",
+    },
+
+    "rest api": {
+        "rest api",
+        "restful api",
+        "rest apis",
+        "restful",
+    },
+
+    "docker": {
+        "docker",
+        "docker containers",
+    },
+
+    "tensorflow": {
+        "tensorflow",
+        "tf",
+    },
+
+    "pytorch": {
+        "pytorch",
+        "torch",
+    },
+
+    "sql": {
+        "sql",
+        "sql server",
+    },
+
+    "git": {
+        "git",
+        "git scm",
+    },
+}
 
 
-def run_evaluation():
-    if not os.path.exists(DATASET_PATH):
-        print("ERROR: Evaluation dataset not found.")
-        print(DATASET_PATH)
-        return
+def normalize_skill(skill: str) -> str:
+    """
+    Normalize a skill name consistently.
+    """
 
-    with open(DATASET_PATH, "r", encoding="utf-8") as f:
-        dataset = json.load(f)
+    if not skill:
+        return ""
 
-    results = []
+    skill = str(skill).strip().lower()
 
-    print("=" * 110)
-    print(
-        f"{'Case ID':<10} | "
-        f"{'Scenario':<38} | "
-        f"{'Score':<10} | "
-        f"{'Recommendation':<20} | "
-        f"{'Pass?':<6}"
+    skill = skill.replace("&", " and ")
+
+    # Keep + and # for C++ / C#
+    skill = re.sub(
+        r"[^a-z0-9+#./\s-]",
+        " ",
+        skill
     )
-    print("-" * 110)
 
-    for item in dataset:
-        case_id = item.get("id", "")
-        scenario = item.get("scenario", "")
-        resume_text = item.get("resume_text", "")
-        job_text = item.get("job_text", "")
-        expected = item.get("expected_result", {})
+    skill = re.sub(
+        r"\s+",
+        " ",
+        skill
+    ).strip()
 
-        expected_recommendation = expected.get(
-            "recommendation",
-            ""
+    skill = skill.rstrip(".,;:")
+
+    if skill in SKILL_ALIASES:
+        return SKILL_ALIASES[skill]
+
+    return skill
+
+
+def skill_matches(
+    candidate_skill: str,
+    target_skill: str,
+) -> bool:
+    """
+    Determine whether two skills
+    represent the same technology.
+    """
+
+    candidate = normalize_skill(
+        candidate_skill
+    )
+
+    target = normalize_skill(
+        target_skill
+    )
+
+    if not candidate or not target:
+        return False
+
+    if candidate == target:
+        return True
+
+    candidate_aliases = RELATED_SKILLS.get(
+        candidate,
+        {candidate},
+    )
+
+    target_aliases = RELATED_SKILLS.get(
+        target,
+        {target},
+    )
+
+    if candidate_aliases.intersection(
+        target_aliases
+    ):
+        return True
+
+    if candidate in target:
+        return True
+
+    if target in candidate:
+        return True
+
+    return False
+
+def match_skills(
+    candidate_skills: list[str],
+    target_skills: list[str],
+) -> dict:
+    """
+    Compare candidate skills
+    against job skills.
+    """
+
+    candidate_normalized = [
+        normalize_skill(skill)
+        for skill in candidate_skills
+        if skill
+    ]
+
+    candidate_normalized = list(
+        dict.fromkeys(
+            skill
+            for skill in candidate_normalized
+            if skill
+        )
+    )
+
+    if not target_skills:
+        return {
+            "matched": [],
+            "missing": [],
+            "score": 1.0,
+        }
+
+    matched = []
+    missing = []
+
+    for target in target_skills:
+
+        found = any(
+            skill_matches(
+                candidate,
+                target,
+            )
+            for candidate in candidate_normalized
         )
 
-        expected_min = float(
-            expected.get("min_score", 0)
-        )
+        if found:
+            matched.append(target)
+        else:
+            missing.append(target)
 
-        expected_max = float(
-            expected.get("max_score", 100)
-        )
-
-        print(f"\nCASE: {case_id}")
-
-        try:
-            resume_data = extract_resume_information(
-                resume_text
-            )
-
-            job_data = extract_job_requirements(
-                job_text
-            )
-
-            print(
-                "RESUME NAME:",
-                getattr(resume_data, "name", "")
-            )
-
-            print(
-                "RESUME SKILLS:",
-                getattr(resume_data, "skills", [])
-            )
-
-            print(
-                "RESUME YEARS:",
-                getattr(
-                    resume_data,
-                    "years_experience",
-                    0.0
-                )
-            )
-
-            print(
-                "RESUME EDUCATION:",
-                getattr(
-                    resume_data,
-                    "education",
-                    []
-                )
-            )
-
-            print(
-                "JOB REQUIRED:",
-                getattr(
-                    job_data,
-                    "required_skills",
-                    []
-                )
-            )
-
-            print(
-                "JOB PREFERRED:",
-                getattr(
-                    job_data,
-                    "preferred_skills",
-                    []
-                )
-            )
-
-            print(
-                "JOB YEARS:",
-                getattr(
-                    job_data,
-                    "required_experience_years",
-                    0.0
-                )
-            )
-
-            print(
-                "JOB EDUCATION:",
-                getattr(
-                    job_data,
-                    "education_required",
-                    []
-                )
-            )
-
-            score_details = compute_overall_match(
-                resume_data,
-                job_data,
-                resume_text,
-                job_text
-            )
-
-            print("DEBUG:", score_details)
-            print("-" * 80)
-
-            final_score = score_details["final_score"]
-            recommendation = score_details["recommendation"]
-
-            score_pass = (
-                expected_min
-                <= final_score
-                <= expected_max
-            )
-
-            recommendation_pass = (
-                recommendation
-                == expected_recommendation
-            )
-
-            final_pass = (
-                score_pass
-                and recommendation_pass
-            )
-
-            print(
-                f"{case_id:<10} | "
-                f"{scenario[:38]:<38} | "
-                f"{final_score:<10.2f} | "
-                f"{recommendation:<20} | "
-                f"{'PASS' if final_pass else 'FAIL'}"
-            )
-
-            results.append({
-                "CaseID": case_id,
-                "Scenario": scenario,
-                "ExpectedRecommendation":
-                    expected_recommendation,
-                "ExpectedMinScore":
-                    expected_min,
-                "ExpectedMaxScore":
-                    expected_max,
-                "CalculatedScore":
-                    final_score,
-                "ActualRecommendation":
-                    recommendation,
-                "ScoreRangePass":
-                    score_pass,
-                "RecommendationPass":
-                    recommendation_pass,
-                "FinalResult":
-                    "PASS" if final_pass else "FAIL",
-                "Error": ""
-            })
-
-        except Exception as e:
-            error_message = str(e)
-
-            print(
-                f"{case_id:<10} | "
-                f"{scenario[:38]:<38} | "
-                f"{'ERROR':<10} | "
-                f"{error_message[:20]:<20} | "
-                f"FAIL"
-            )
-
-            results.append({
-                "CaseID": case_id,
-                "Scenario": scenario,
-                "ExpectedRecommendation":
-                    expected_recommendation,
-                "ExpectedMinScore":
-                    expected_min,
-                "ExpectedMaxScore":
-                    expected_max,
-                "CalculatedScore": "",
-                "ActualRecommendation": "",
-                "ScoreRangePass": False,
-                "RecommendationPass": False,
-                "FinalResult": "ERROR",
-                "Error": error_message
-            })
-
-    if results:
-        os.makedirs(
-            os.path.dirname(RESULTS_CSV),
-            exist_ok=True
-        )
-
-        fieldnames = [
-            "CaseID",
-            "Scenario",
-            "ExpectedRecommendation",
-            "ExpectedMinScore",
-            "ExpectedMaxScore",
-            "CalculatedScore",
-            "ActualRecommendation",
-            "ScoreRangePass",
-            "RecommendationPass",
-            "FinalResult",
-            "Error"
-        ]
-
-        with open(
-            RESULTS_CSV,
-            "w",
-            newline="",
-            encoding="utf-8"
-        ) as f:
-            writer = csv.DictWriter(
-                f,
-                fieldnames=fieldnames
-            )
-            writer.writeheader()
-            writer.writerows(results)
-
-    passed = sum(
-        1
-        for result in results
-        if result["FinalResult"] == "PASS"
+    score = (
+        len(matched)
+        / len(target_skills)
+        if target_skills
+        else 1.0
     )
 
-    failed = sum(
-        1
-        for result in results
-        if result["FinalResult"] == "FAIL"
-    )
-
-    errors = sum(
-        1
-        for result in results
-        if result["FinalResult"] == "ERROR"
-    )
-
-    total = len(results)
-
-    accuracy = (
-        (passed / total) * 100
-        if total
-        else 0.0
-    )
-
-    print("=" * 110)
-    print(f"Total Cases : {total}")
-    print(f"Passed      : {passed}")
-    print(f"Failed      : {failed}")
-    print(f"Errors      : {errors}")
-    print(f"Accuracy    : {accuracy:.2f}%")
-    print(f"Results saved to: {RESULTS_CSV}")
-    print("=" * 110)
-
-
-if __name__ == "__main__":
-    run_evaluation()
+    return {
+        "matched": matched,
+        "missing": missing,
+        "score": round(score, 4),
+    }
