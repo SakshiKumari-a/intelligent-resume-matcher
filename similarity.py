@@ -2,16 +2,26 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+MAX_FEATURES = 5000
+
+
 def calculate_tfidf_similarity(
     resume_text: str,
-    job_text: str
+    job_text: str,
 ) -> float:
+    """
+    Calculate semantic similarity between
+    resume text and job description using TF-IDF.
+
+    Returns:
+        float between 0.0 and 1.0
+    """
 
     if not resume_text or not job_text:
         return 0.0
 
-    resume_text = resume_text.strip()
-    job_text = job_text.strip()
+    resume_text = str(resume_text).strip()
+    job_text = str(job_text).strip()
 
     if not resume_text or not job_text:
         return 0.0
@@ -22,26 +32,29 @@ def calculate_tfidf_similarity(
             lowercase=True,
             stop_words="english",
             ngram_range=(1, 2),
-            max_features=5000,
+            max_features=MAX_FEATURES,
         )
 
         matrix = vectorizer.fit_transform(
-            [resume_text, job_text]
+            [
+                resume_text,
+                job_text,
+            ]
         )
 
         similarity = cosine_similarity(
             matrix[0:1],
-            matrix[1:2]
+            matrix[1:2],
         )[0][0]
 
-        return float(
-            max(
-                0.0,
-                min(
-                    1.0,
-                    similarity
-                )
-            )
+        similarity = float(similarity)
+
+        return max(
+            0.0,
+            min(
+                1.0,
+                similarity,
+            ),
         )
 
     except Exception:
