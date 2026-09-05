@@ -1,6 +1,14 @@
 import re
-from app.gemini_client import extract_structured_data, ResumeData
+
+from app.gemini_client import (
+    extract_structured_data,
+    ResumeData,
+)
 from app.skill_matcher import normalize_skill
+
+
+MAX_INPUT_LENGTH = 50000
+
 
 SOFT_SKILLS = {
     "communication",
@@ -12,8 +20,9 @@ SOFT_SKILLS = {
     "creativity",
     "time management",
     "collaboration",
-    "team player"
+    "team player",
 }
+
 
 KNOWN_SKILLS = {
     "python",
@@ -49,9 +58,7 @@ KNOWN_SKILLS = {
     "numpy",
     "spark",
     "hadoop",
-    "aws",
     "amazon web services",
-    "gcp",
     "google cloud platform",
     "azure",
     "linux",
@@ -63,105 +70,119 @@ KNOWN_SKILLS = {
     "django",
     "spring",
     "spring boot",
-    "nextjs",
-    "next.js",
     "power bi",
     "tableau",
-    "excel",
     "snowflake",
-    "dbt",
-    "airflow"
-}
-
-STOPWORDS = {
-    "for", "with", "and", "the", "a", "an", "in", "on", "at", "to", "of",
-    "looking", "strong", "motivated", "candidate", "good", "great", "expert",
-    "skills", "skill", "experience", "years", "year", "work", "working",
-    "developer", "engineer", "senior", "junior", "software", "professional",
-    "required", "preferred", "knowledge", "using", "including", "etc"
+    "airflow",
 }
 
 
-def _clean_skill(value):
-    if not value:
+NORMALIZED_KNOWN_SKILLS = {
+    normalize_skill(skill)
+    for skill in KNOWN_SKILLS
+}
+
+
+def _clean_skill(skill: str) -> str:
+    if not skill:
         return ""
 
-    value = str(value).strip().lower()
-    value = re.sub(r"\s+", " ", value)
+    skill = str(skill).strip().lower()
+    skill = re.sub(r"\s+", " ", skill)
 
-    if value in STOPWORDS:
-        return ""
-
-    normalized = normalize_skill(value)
-
-    if normalized in STOPWORDS:
-        return ""
-
-    return normalized
+    return normalize_skill(skill)
 
 
-def _extract_known_skills(text):
-    text_lower = text.lower()
-    found = set()
+def _extract_known_skills(text: str) -> set[str]:
+
+    text = text.lower()
 
     aliases = {
         "aws": "amazon web services",
-        "amazon web services": "amazon web services",
         "gcp": "google cloud platform",
         "k8s": "kubernetes",
-        "reactjs": "react",
         "react.js": "react",
+        "reactjs": "react",
         "node.js": "nodejs",
         "postgres": "postgresql",
-        "psql": "postgresql",
         "ml": "machine learning",
         "nlp": "natural language processing",
         "restful api": "rest api",
-        "restful apis": "rest api"
+        "restful apis": "rest api",
     }
 
-    candidates = set(KNOWN_SKILLS) | set(aliases.keys())
+    found = set()
+
+    candidates = (
+        set(KNOWN_SKILLS)
+        | set(aliases.keys())
+    )
 
     for skill in candidates:
-        pattern = r"(?<![a-zA-Z0-9+#.])" + re.escape(skill) + r"(?![a-zA-Z0-9+#.])"
 
-        if re.search(pattern, text_lower):
-            found.add(aliases.get(skill, skill))
+        pattern = (
+            r"(?<![a-zA-Z0-9+#.])"
+            + re.escape(skill)
+            + r"(?![a-zA-Z0-9+#.])"
+        )
+
+        if re.search(pattern, text):
+            found.add(
+                aliases.get(skill, skill)
+            )
 
     return found
 
 
-def _extract_years(text):
+def _extract_years(text: str) -> float:
+
     patterns = [
-        r"(\d+(?:\.\d+)?)\s*\+?\s*years?\s+(?:of\s+)?experience",
-        r"experience\s*(?:of|:)?\s*(\d+(?:\.\d+)?)\s*\+?\s*years?",
-        r"(\d+(?:\.\d+)?)\s*\+?\s*years?"
+        r"(\d+(?:\.\d+)?)\+?\s*years?\s+(?:of\s+)?experience",
+        r"experience\s*(?:of|:)?\s*(\d+(?:\.\d+)?)\+?\s*years?",
+        r"(\d+(?:\.\d+)?)\+?\s*years?",
     ]
 
     values = []
 
     for pattern in patterns:
-        for match in re.finditer(pattern, text.lower()):
+
+        for match in re.finditer(
+            pattern,
+            text.lower()
+        ):
             try:
-                values.append(float(match.group(1)))
+                values.append(
+                    float(match.group(1))
+                )
             except ValueError:
                 pass
 
     return max(values) if values else 0.0
 
 
-def _extract_education(text):
+def _extract_education(text: str) -> list[str]:
+
     education = []
 
     patterns = [
-        r"\b(?:bachelor|bachelors|b\.s\.|bs|b\.e\.|be|b\.tech|btech|bca)\b[^.\n;]*",
-        r"\b(?:master|masters|m\.s\.|ms|m\.e\.|me|m\.tech|mtech|mca)\b[^.\n;]*",
-        r"\b(?:phd|ph\.d|doctorate)\b[^.\n;]*"
+        r"\b(?:bachelor|bachelors|bs|b\.s\.|be|b\.e\.|btech|b\.tech|bca)\b[^\n.;]*",
+        r"\b(?:master|masters|ms|m\.s\.|me|m\.e\.|mtech|m\.tech|mca)\b[^\n.;]*",
+        r"\b(?:phd|ph\.d|doctorate)\b[^\n.;]*",
     ]
 
     for pattern in patterns:
-        for match in re.finditer(pattern, text, re.IGNORECASE):
-            value = re.sub(r"\s+", " ", match.group(0)).strip()
+
+        for match in re.finditer(
+            pattern,
+            text,
+            re.IGNORECASE,
+        ):
+
+            value = re.sub(
+                r"\s+",
+                " ",
+                match.group(0)
+            ).strip()
 
             if value and value not in education:
                 education.append(value)
@@ -169,106 +190,185 @@ def _extract_education(text):
     return education
 
 
-def _fallback_resume(text):
-    skills = _extract_known_skills(text)
-    years = _extract_years(text)
-    education = _extract_education(text)
+def _fallback_resume(
+    resume_text: str,
+) -> ResumeData:
 
-    soft = set()
+    skills = sorted(
+        _extract_known_skills(
+            resume_text
+        )
+    )
+
+    years = _extract_years(
+        resume_text
+    )
+
+    education = _extract_education(
+        resume_text
+    )
+
+    soft_skills = []
 
     for skill in SOFT_SKILLS:
-        if skill in text.lower():
-            soft.add(skill)
+
+        if skill in resume_text.lower():
+            soft_skills.append(skill)
 
     return ResumeData(
         name="",
-        skills=sorted(skills),
-        soft_skills=sorted(soft),
+        skills=skills,
+        soft_skills=sorted(
+            soft_skills
+        ),
         experience=[],
         years_experience=years,
         education=education,
         projects=[],
         certifications=[],
-        tools=[]
+        tools=[],
     )
 
 
-def extract_resume_information(resume_text: str) -> ResumeData:
-    if not resume_text or not resume_text.strip():
-        raise ValueError("Resume text cannot be empty.")
+def extract_resume_information(
+    resume_text: str,
+) -> ResumeData:
+
+    if not resume_text.strip():
+        raise ValueError(
+            "Resume text cannot be empty."
+        )
+
+    resume_text = resume_text[
+        :MAX_INPUT_LENGTH
+    ]
 
     prompt = f"""
 Extract structured resume information.
 
-Return only the requested structured fields.
+Return JSON only.
+
+Fields:
+- name
+- skills
+- soft_skills
+- experience
+- years_experience
+- education
+- projects
+- certifications
+- tools
 
 Rules:
-- name = candidate name only
-- skills = technical skills only
-- soft_skills = soft skills only
-- years_experience = numeric years of professional experience
-- education = degree/education information only
-- projects = project descriptions
-- certifications = certifications
-- tools = software/tools
+1. Extract only information present in the resume.
+2. Do not invent information.
+3. Skills must contain technical skills only.
+4. Soft skills must contain interpersonal skills only.
+5. years_experience must be numeric.
+6. Return empty lists if information is missing.
 
-Never put names, job titles, education, or complete sentences inside skills.
+Resume:
 
-RESUME:
 {resume_text}
 """
 
     try:
-        data = extract_structured_data(prompt, ResumeData)
 
-        technical = set()
-        soft = set()
+        data = extract_structured_data(
+            prompt,
+            ResumeData,
+        )
 
-        for skill in data.skills or []:
-            cleaned = _clean_skill(skill)
+        technical_skills = set()
+        soft_skills = set()
+
+        for skill in data.skills:
+
+            cleaned = _clean_skill(
+                skill
+            )
 
             if not cleaned:
                 continue
 
             if cleaned in SOFT_SKILLS:
-                soft.add(cleaned)
-            elif cleaned in KNOWN_SKILLS or cleaned in {
-                normalize_skill(x) for x in KNOWN_SKILLS
-            }:
-                technical.add(cleaned)
+                soft_skills.add(
+                    cleaned
+                )
+            elif (
+                cleaned
+                in NORMALIZED_KNOWN_SKILLS
+            ):
+                technical_skills.add(
+                    cleaned
+                )
 
-        for skill in data.soft_skills or []:
-            cleaned = _clean_skill(skill)
+        for skill in data.soft_skills:
+
+            cleaned = _clean_skill(
+                skill
+            )
 
             if cleaned:
-                soft.add(cleaned)
+                soft_skills.add(
+                    cleaned
+                )
 
-        raw_skills = _extract_known_skills(resume_text)
+        technical_skills.update(
+            _extract_known_skills(
+                resume_text
+            )
+        )
 
-        if not technical:
-            technical.update(raw_skills)
-        else:
-            technical.update(raw_skills)
+        years = (
+            data.years_experience
+            if data.years_experience > 0
+            else _extract_years(
+                resume_text
+            )
+        )
 
-        years = data.years_experience
+        education = (
+            data.education
+            if data.education
+            else _extract_education(
+                resume_text
+            )
+        )
 
-        if not years or years <= 0:
-            years = _extract_years(resume_text)
+        data.skills = sorted(
+            technical_skills
+        )
 
-        education = data.education or []
+        data.soft_skills = sorted(
+            soft_skills
+        )
 
-        if not education:
-            education = _extract_education(resume_text)
+        data.years_experience = float(
+            years
+        )
 
-        if not technical and not soft and not education and years == 0:
-            return _fallback_resume(resume_text)
-
-        data.skills = sorted(technical)
-        data.soft_skills = sorted(soft)
-        data.years_experience = float(years)
         data.education = education
+
+        data.projects = (
+            data.projects or []
+        )
+
+        data.certifications = (
+            data.certifications or []
+        )
+
+        data.tools = (
+            data.tools or []
+        )
+
+        data.experience = (
+            data.experience or []
+        )
 
         return data
 
     except Exception:
-        return _fallback_resume(resume_text)
+        return _fallback_resume(
+            resume_text
+        )
